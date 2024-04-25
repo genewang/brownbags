@@ -50,7 +50,7 @@ def train(output, models=['linear', 'forest'], print_output=True):
 
     Parameters:
     output (str): The output metric to train the model on (e.g. "impressions")
-    models (list, optional): List of models to train. Defaults to ['linear', 'forest', 'svr'].
+    models (list, optional): List of models to train. Defaults to ['linear', 'forest'].
     """
     data = get_predictions(output)
     print('Primary predictions loaded.')

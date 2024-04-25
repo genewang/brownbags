@@ -5,8 +5,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
-# from xgboost import XGBRegressor
-# from catboost import CatBoostRegressor
+from xgboost import XGBRegressor
+from catboost import CatBoostRegressor
 from skopt import BayesSearchCV
 from skopt.space import Integer, Real
 import statsmodels.api as sm
@@ -22,7 +22,7 @@ class Stopper:
 
     def on_step(self, result):
         new_best_score = self.search.best_score_
-        # TODO: Fix AttributeError for BayesSearchCV
+        # TODO: Fix AttributeError in BayesSearchCV for xgb and cat
         # print("New best score: %s" % new_best_score)
         if new_best_score <= self.best_score:
             self.n_stagnations += 1

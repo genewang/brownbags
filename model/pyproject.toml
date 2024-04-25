@@ -10,11 +10,11 @@ pandas = "^2.0"
 psycopg2 = "^2.9"
 boto3 = "^1.14"
 joblib = "^1.0"
-scikit-learn = "^1.2"
-scikit-optimize = "^0.9"
+scikit-learn = "^1.4"
+scikit-optimize = "^0.10"
 statsmodels = "^0.14"
-# xgboost = "^1.2"  # does not work on apple silicon (m1)
-# catboost = "^0.24"  # does not work on apple silicon (m1)
+xgboost = "^2.0"
+catboost = "^1.2"
 
 [tool.poetry.dev-dependencies]
 

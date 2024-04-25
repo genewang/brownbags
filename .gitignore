@@ -11,3 +11,4 @@ __pycache__
 !impressions.csv
 *.xlsx
 models/
+catboost_info/
