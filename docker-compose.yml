@@ -1,0 +1,86 @@
+version: '3.8'
+
+# Define services that comprise the application
+services:
+  # API Service
+  api:
+    container_name: predictor-api
+    build: 
+      context: .
+      dockerfile: api/Dockerfile
+      args:
+        - BUILD_ENV=${BUILD_ENV:-development}
+    ports:
+      - "${API_PORT:-5000}:5000"
+    volumes:
+      - ./api:/app
+      - ./model:/app/model
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - FLASK_DEBUG=${FLASK_DEBUG:-0}
+      - REDIS_URL=redis://redis:6379/0
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Service
+  redis:
+    container_name: predictor-redis
+    image: redis:7.2-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-your_secure_password}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+# Define networks
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+# Define volumes
+volumes:
+  redis_data:
+    driver: local
