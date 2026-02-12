@@ -70,6 +70,13 @@ def evaluate(regressors, X_train, y_train, X_train_scaled, y_train_scaled,
                 regressor.predict(X_train_cat), y_train_cat)
             test_accuracy = hel.mean_relative_accuracy(
                 regressor.predict(X_test_cat), y_test_cat)
+        elif 'PyTorchRegressor' in str(type(regressor)):
+            # PyTorch models use unscaled data
+            regressor.fit(X_train, y_train)
+            training_accuracy = hel.mean_relative_accuracy(
+                regressor.predict(X_train), y_train)
+            test_accuracy = hel.mean_relative_accuracy(
+                regressor.predict(X_test), y_test)
         else:
             regressor.fit(X_train, y_train)
             training_accuracy = hel.mean_relative_accuracy(
@@ -90,7 +97,19 @@ def evaluate(regressors, X_train, y_train, X_train_scaled, y_train_scaled,
 
 def save(regressor, X, output):
     """Save model and columns to file."""
-    joblib.dump(regressor, './models/' + output + '_model.pkl')
+    import torch
+    
+    # Handle PyTorch models differently
+    if 'PyTorchRegressor' in str(type(regressor)):
+        # Save PyTorch model state and scaler
+        model_path = './models/' + output + '_model.pkl'
+        # Save the entire regressor (includes model, scaler, etc.) using joblib
+        joblib.dump(regressor, model_path)
+    else:
+        # Standard scikit-learn models
+        joblib.dump(regressor, './models/' + output + '_model.pkl')
+    
+    # Save columns
     joblib.dump(list(X.columns), './models/' + output + '_columns.pkl')
 
 
@@ -113,6 +132,8 @@ def print_results(regressor, X, X_scaled, y, y_scaler, X_cat):
             regressor.predict(X_scaled)).round(4)
     elif 'Cat' in str(regressor):
         predictions = regressor.predict(X_cat).round(4)
+    elif 'PyTorchRegressor' in str(type(regressor)):
+        predictions = regressor.predict(X).round(4)
     else:
         predictions = regressor.predict(X).round(4)
 
@@ -169,6 +190,8 @@ def train(
         best_regressor.fit(X_scaled, y_scaled)
     elif 'Cat' in str(best_regressor):
         best_regressor.fit(X_cat, y_cat)
+    elif 'PyTorchRegressor' in str(type(best_regressor)):
+        best_regressor.fit(X, y)
     else:
         best_regressor.fit(X, y)
     print('Regressor fit.')

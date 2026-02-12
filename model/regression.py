@@ -11,6 +11,7 @@ from skopt import BayesSearchCV
 from skopt.space import Integer, Real
 import statsmodels.api as sm
 import helpers as hel
+from pytorch_model import PyTorchRegressor, pytorch_cv_score
 
 
 class Stopper:
@@ -277,3 +278,61 @@ class Regression:
             learning_rate=best_cat_parameters['learning_rate'],
             random_strength=best_cat_parameters['random_strength'],
             random_state=1, verbose=0)
+
+    def pytorch(self, model_type='feedforward'):
+        """
+        Construct a PyTorch neural network regressor and calculate the training score
+        using training data and cross-validation.
+        
+        Parameters:
+        model_type (str): Type of model - 'feedforward' or 'deep'
+        """
+        # Split training data for validation
+        from sklearn.model_selection import train_test_split
+        X_train_nn, X_val_nn, y_train_nn, y_val_nn = train_test_split(
+            self.X_train, self.y_train, test_size=0.2, random_state=1
+        )
+        
+        # Try different architectures
+        architectures = [
+            {'hidden_sizes': [128, 64, 32], 'dropout_rate': 0.2},
+            {'hidden_sizes': [256, 128, 64], 'dropout_rate': 0.3},
+            {'hidden_sizes': [64, 32, 16], 'dropout_rate': 0.1},
+        ]
+        
+        best_score = -float('inf')
+        best_regressor = None
+        best_params = None
+        
+        for arch in architectures:
+            regressor = PyTorchRegressor(
+                model_type=model_type,
+                hidden_sizes=arch['hidden_sizes'],
+                dropout_rate=arch['dropout_rate'],
+                learning_rate=0.001,
+                batch_size=32,
+                epochs=100,
+                early_stopping_patience=10
+            )
+            
+            # Fit with validation
+            regressor.fit(X_train_nn, y_train_nn, X_val_nn, y_val_nn)
+            
+            # Calculate score using cross-validation
+            score = pytorch_cv_score(regressor, self.X_train, self.y_train, cv=5, 
+                                     scoring=hel.mean_relative_accuracy)
+            
+            print(f'PyTorch {model_type} score (hidden={arch["hidden_sizes"]}): {score}')
+            
+            if score > best_score:
+                best_score = score
+                best_regressor = regressor
+                best_params = arch
+        
+        print(f'Best PyTorch {model_type} params: {best_params}')
+        print(f'Best PyTorch {model_type} score: {best_score}')
+        
+        # Refit on full training data
+        best_regressor.fit(self.X_train, self.y_train)
+        
+        return best_regressor

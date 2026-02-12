@@ -16,6 +16,7 @@ from typing import Dict, Any, Union, List
 import joblib
 import pandas as pd
 import redis
+import torch
 from flask import Flask, request, jsonify, render_template
 
 # Configure logging
@@ -206,8 +207,20 @@ def predict(data: Union[Dict, List[Dict]], output: str) -> float:
             
         df = pd.DataFrame(data).reindex(columns=columns, fill_value=0)
         
-        # Make prediction
-        prediction = model.predict(df)[0]
+        # Make prediction - handle PyTorch models differently
+        if hasattr(model, 'predict'):
+            # Standard scikit-learn interface
+            prediction = model.predict(df)[0]
+        elif isinstance(model, torch.nn.Module):
+            # PyTorch model
+            model.eval()
+            with torch.no_grad():
+                df_tensor = torch.FloatTensor(df.values)
+                prediction = model(df_tensor).item()
+        else:
+            # Try standard predict method
+            prediction = model.predict(df)[0]
+        
         return float(prediction)
         
     except Exception as e:
@@ -240,8 +253,19 @@ def load_model_from_redis(model_key: str):
             raise ValueError(f"Empty model data for key: {model_key}")
             
         # Deserialize the model
-        model = joblib.load(io.BytesIO(model_data))
-        return model
+        # Try joblib first (for scikit-learn, xgboost, etc.)
+        try:
+            model = joblib.load(io.BytesIO(model_data))
+            return model
+        except Exception as e:
+            # If joblib fails, try PyTorch
+            try:
+                model = torch.load(io.BytesIO(model_data), map_location='cpu')
+                model.eval()  # Set to evaluation mode
+                return model
+            except Exception as e2:
+                logger.error(f"Failed to load model with both joblib and PyTorch: {str(e)}, {str(e2)}")
+                raise
         
     except Exception as e:
         logger.error(f"Error loading model {model_key} from Redis: {str(e)}")
