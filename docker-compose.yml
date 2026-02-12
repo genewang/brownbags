@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_APP=api.py
+      - FLASK_ENV=production
+    volumes:
+      # Mount model files for live updates
+      - ./model/models:/app/models:ro
+      # Mount data files if needed
+      - ./model:/app/data:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  model-training:
+    build:
+      context: .
+      dockerfile: Dockerfile.model
+    volumes:
+      # Mount data and models for training
+      - ./model:/app
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    profiles:
+      - training
+    # This service is only used when explicitly started for training
+
+volumes:
+  data:
+    driver: local

@@ -4,7 +4,6 @@ from flask import Flask, request, jsonify, render_template
 from boto.s3.connection import S3Connection
 import pandas as pd
 import joblib
-import config
 
 
 app = Flask(__name__)
@@ -108,7 +107,8 @@ def format_categoricals(data):
 
 def predict_metrics(data):
     predictions = {}
-    for metric in ['impressions', 'clicks', 'purchases']:
+    #for metric in ['impressions', 'clicks', 'purchases']:
+    for metric in ['impressions']:
         direct = int(predict([data], metric))
         cpx = int(data['cost'] / predict([data], 'cost_per_' + metric[0:-1]))
         trans = int(predict([{'direct': direct, 'cpx': cpx}],
@@ -126,15 +126,16 @@ def predict(data, output):
 
 
 def load_from_bucket(key):
-    connection = S3Connection(aws_access_key_id=config.aws_access_key_id,
-                              aws_secret_access_key=config.aws_secret_access_key,
-                              is_secure=False)
-    bucket = connection.get_bucket('cpx-prediction')
-    local_file = '/tmp/' + key
-    bucket.get_key(key).get_contents_to_filename(local_file)
-    model = joblib.load(local_file)
+#    connection = S3Connection(aws_access_key_id=config.aws_access_key_id,
+#                              aws_secret_access_key=config.aws_secret_access_key,
+#                              is_secure=False)
+#    bucket = connection.get_bucket('cpx-prediction')
+#    local_file = '/tmp/' + key
+#    bucket.get_key(key).get_contents_to_filename(local_file)
+    with open(r'../model/models/impressions_model.pkl', 'rb') as local_file:
+        model = joblib.load(local_file)
     return model
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=5000)
