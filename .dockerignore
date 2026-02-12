@@ -7,8 +7,25 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-*.pyc
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual environments
 venv/
@@ -25,6 +42,10 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Environment variables
+.env
+.flaskenv
+
 # Logs
 *.log
 
@@ -36,6 +57,15 @@ Thumbs.db
 model/catboost_info/
 model/*.csv.old
 model/*.pyc
+
+# Model files (exclude from build, but allow in volumes)
+*.pkl
+*.h5
+*.hdf5
+*.joblib
+*.pth
+*.pt
+*.bin
 
 # Documentation
 README.md

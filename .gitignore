@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.venv
 config.py
 zappa_settings.json
 __pycache__
@@ -10,3 +11,4 @@ __pycache__
 !impressions.csv
 *.xlsx
 models/
+catboost_info/
